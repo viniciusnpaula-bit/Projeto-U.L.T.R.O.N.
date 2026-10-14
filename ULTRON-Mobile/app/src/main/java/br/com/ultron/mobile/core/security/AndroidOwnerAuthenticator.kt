@@ -83,6 +83,12 @@ class AndroidOwnerAuthenticator(
         }
     }
 
+    /** Call only after AndroidX BiometricPrompt reports BIOMETRIC_SUCCESS. */
+    @Synchronized
+    fun acceptBiometricAuthentication() {
+        authenticatedUntil = clock() + sessionTtlMillis
+    }
+
     @Synchronized
     override fun isAuthenticated(): Boolean = clock() < authenticatedUntil
 
