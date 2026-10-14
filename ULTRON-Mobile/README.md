@@ -31,6 +31,7 @@ APK de debug esperado:
 - `SecureActionExecutor` é o gateway central para execução. Os executores de plataforma devem ficar encapsulados e não ser chamados diretamente pela UI/IA.
 - Ações HIGH exigem sessão autenticada do proprietário e uma confirmação de uso único, vinculada ao ID da ação e aos argumentos, com expiração monotônica. Tokens pendentes ficam apenas em memória e desaparecem ao encerrar o processo.
 - `AndroidOwnerAuthenticator` permite cadastrar PIN de 6+ dígitos. O PIN não é persistido; o verificador usa HMAC com chave não exportável no Android Keystore, com bloqueio progressivo após falhas. Não há PIN padrão.
+- `BiometricOwnerGate` fornece autenticação biométrica forte opcional para uma `FragmentActivity`; o fluxo ainda precisa ser ligado a uma tela de configuração/confirmação.
 - `SecurityAudit` registra metadados de autorização e bloqueio; não passe PIN, token, prompt ou argumentos sensíveis para o logger.
 - A dependência AndroidX Biometric foi adicionada como preparação; a tela/fluxo de biometria ainda precisa ser conectado e testado no dispositivo.
 - Não inclua chaves da Groq no APK nem no repositório. A integração de IA deve chamar um backend que mantém o segredo no servidor.
