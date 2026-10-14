@@ -50,6 +50,12 @@ class AndroidOwnerAuthenticator(
         }
     }
 
+    /** True when an owner PIN has been enrolled on this installation. */
+    @Synchronized
+    fun hasEnrollment(): Boolean =
+        !prefs.getString("pin_salt", null).isNullOrBlank() &&
+            !prefs.getString("pin_verifier", null).isNullOrBlank()
+
     // Suspend API delegates to a synchronized non-suspending critical section:
     // concurrent attempts cannot race the failure counter or session state.
     override suspend fun verifyPin(pin: CharArray): Boolean = verifyPinSync(pin)
