@@ -45,7 +45,6 @@ class AndroidOwnerAuthenticator(
         }
     }
 
-    @Synchronized
     override suspend fun verifyPin(pin: CharArray): Boolean {
         try {
             val now = clock()
