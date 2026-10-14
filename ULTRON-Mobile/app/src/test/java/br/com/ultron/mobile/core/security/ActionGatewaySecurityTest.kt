@@ -88,6 +88,46 @@ class ActionGatewaySecurityTest {
         assertEquals(0, executions)
     }
 
+
+    @Test fun confirmationCannotBeReusedForDifferentArguments() {
+        var executions = 0
+        val gateway = ActionGateway(
+            executor = fakeExecutor { executions++; ActionResult.Success("sent") },
+            confirmations = ConfirmationManager(now = { 100L }),
+            audit = noOpAudit(),
+            androidPermissionGranted = { true },
+            ownerAuthenticated = { true },
+            confirmExplicitly = { true }
+        )
+        val challenge = runSuspend { gateway.execute(request) } as ActionResult.ConfirmationRequired
+        val tampered = request.copy(arguments = request.arguments + ("body" to "changed"))
+        val result = runSuspend { gateway.execute(tampered, challenge.confirmationId) }
+
+        assertTrue(result is ActionResult.Blocked)
+        assertEquals(0, executions)
+    }
+
+    @Test fun executionIsDeniedIfOwnerSessionExpiresDuringApproval() {
+        var authenticated = true
+        var executions = 0
+        val gateway = ActionGateway(
+            executor = fakeExecutor { executions++; ActionResult.Success("sent") },
+            confirmations = ConfirmationManager(now = { 100L }),
+            audit = noOpAudit(),
+            androidPermissionGranted = { true },
+            ownerAuthenticated = { authenticated },
+            confirmExplicitly = {
+                authenticated = false
+                true
+            }
+        )
+        val challenge = runSuspend { gateway.execute(request) } as ActionResult.ConfirmationRequired
+        val result = runSuspend { gateway.execute(request, challenge.confirmationId) }
+
+        assertTrue(result is ActionResult.Blocked)
+        assertEquals(0, executions)
+    }
+
     private fun fakeExecutor(run: () -> ActionResult) = object : ActionExecutor {
         override fun policyFor(actionId: String) =
             if (actionId == "message.send") ActionPolicy(actionId, RiskLevel.HIGH, allowlisted = true) else null
