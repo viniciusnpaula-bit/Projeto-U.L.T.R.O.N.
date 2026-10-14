@@ -3,11 +3,6 @@ package br.com.ultron.mobile
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,140 +13,191 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import br.com.ultron.mobile.core.conversation.MessageRole
+import br.com.ultron.mobile.ui.ChatLine
+import br.com.ultron.mobile.ui.UltronViewModel
 
 private val Background = Color(0xFF08090D)
 private val Panel = Color(0xFF15171E)
 private val Red = Color(0xFFE53945)
 private val Muted = Color(0xFF969AA8)
+private val AssistantBubble = Color(0xFF1B1D25)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { UltronApp() }
+        setContent { UltronChatScreen() }
     }
 }
 
 @Composable
-private fun UltronApp() {
-    var status by remember { mutableStateOf("SISTEMA PRONTO") }
-    var selectedTab by remember { mutableStateOf("INÍCIO") }
-    val pulse = rememberInfiniteTransition(label = "corePulse")
-    val glow by pulse.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1500), RepeatMode.Reverse),
-        label = "glow"
-    )
+private fun UltronChatScreen(viewModel: UltronViewModel = viewModel()) {
+    val state by viewModel.state.collectAsState()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(state.messages.size) {
+        if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.lastIndex)
+    }
 
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = Background) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
                         Text("ULTRON", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
                         Text("ASSISTENTE PESSOAL", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                     }
-                    Box(
-                        modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(Panel).padding(horizontal = 12.dp, vertical = 8.dp)
+                    Row(
+                        modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(Panel).padding(horizontal = 10.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("● LOCAL", color = Red, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Box(Modifier.width(7.dp).height(7.dp).clip(CircleShape).background(Red))
+                        Spacer(Modifier.width(7.dp))
+                        Text("LOCAL", color = Red, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
-                Spacer(Modifier.height(38.dp))
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(250.dp)) {
-                    Box(
-                        Modifier.size(238.dp).alpha(glow * 0.18f).clip(CircleShape)
-                            .background(Brush.radialGradient(listOf(Red, Color.Transparent)))
-                    )
-                    Box(
-                        Modifier.size(190.dp).clip(CircleShape)
-                            .background(Brush.radialGradient(listOf(Color(0xFF45151B), Color(0xFF171017), Background)))
-                    )
-                    Box(
-                        Modifier.size(142.dp).clip(CircleShape)
-                            .background(Brush.radialGradient(listOf(Color(0xFFFF6870), Color(0xFF9F1C2B), Color(0xFF240B10))))
-                    )
-                    Box(
-                        Modifier.size(104.dp).clip(CircleShape)
-                            .background(Brush.radialGradient(listOf(Color(0xFF171920), Color(0xFF050609))))
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("U", color = Color.White, fontSize = 48.sp, fontWeight = FontWeight.ExtraLight)
-                        Text("CORE", color = Red, fontSize = 9.sp, letterSpacing = 3.sp)
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-                Text(status, color = Red, fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(25.dp))
-                Button(
-                    onClick = { status = "VOZ AINDA NÃO CONFIGURADA" },
-                    colors = ButtonDefaults.buttonColors(containerColor = Red),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().height(54.dp)
-                ) {
-                    Text("INICIAR VOZ", color = Color.White, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                }
                 Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    QuickCard("CONVERSAS", "Histórico", Modifier.weight(1f)) { selectedTab = "CONVERSAS"; status = "MÓDULO EM CONSTRUÇÃO" }
-                    QuickCard("CONTROLES", "Ações locais", Modifier.weight(1f)) { selectedTab = "CONTROLES"; status = "MÓDULO EM CONSTRUÇÃO" }
-                }
+                Text(
+                    state.notice ?: "PRONTO PARA RECEBER COMANDOS",
+                    color = Muted,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.7.sp
+                )
                 Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    QuickCard("ATIVIDADES", "Auditoria", Modifier.weight(1f)) { selectedTab = "ATIVIDADES"; status = "MÓDULO EM CONSTRUÇÃO" }
-                    QuickCard("CONFIGURAÇÕES", "IA e segurança", Modifier.weight(1f)) { selectedTab = "CONFIGURAÇÕES"; status = "MÓDULO EM CONSTRUÇÃO" }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(state.messages, key = { it.id }) { line ->
+                        MessageBubble(line)
+                    }
+                    if (state.isProcessing) {
+                        item(key = "processing") {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.width(16.dp).height(16.dp),
+                                    color = Red,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(Modifier.width(9.dp))
+                                Text("Processando...", color = Muted, fontSize = 12.sp)
+                            }
+                        }
+                    }
                 }
-                Spacer(Modifier.weight(1f))
-                Text("FASE 1 • BASE NATIVA", color = Muted, fontSize = 10.sp, letterSpacing = 1.5.sp)
-                Text("Selecionado: $selectedTab", color = Muted.copy(alpha = 0.65f), fontSize = 9.sp)
+
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    OutlinedTextField(
+                        value = state.input,
+                        onValueChange = viewModel::updateInput,
+                        modifier = Modifier.weight(1f),
+                        enabled = !state.isProcessing,
+                        placeholder = { Text("Fale com o ULTRON...", color = Muted) },
+                        maxLines = 4,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Red,
+                            unfocusedBorderColor = Color(0xFF343743),
+                            cursorColor = Red,
+                            focusedContainerColor = Panel,
+                            unfocusedContainerColor = Panel
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { viewModel.send() })
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = viewModel::send,
+                        enabled = state.input.isNotBlank() && !state.isProcessing,
+                        modifier = Modifier.height(54.dp),
+                        shape = RoundedCornerShape(15.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Red,
+                            disabledContainerColor = Color(0xFF4A252A)
+                        )
+                    ) {
+                        Text("ENVIAR", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    "Comandos locais: ajuda • status • versão",
+                    color = Muted,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 2.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun QuickCard(title: String, subtitle: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(88.dp),
-        color = Panel,
-        shape = RoundedCornerShape(16.dp)
+private fun MessageBubble(line: ChatLine) {
+    val isUser = line.role == MessageRole.USER
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.Center) {
-            Text(title, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
-            Spacer(Modifier.height(5.dp))
-            Text(subtitle, color = Muted, fontSize = 11.sp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(if (isUser) 0.88f else 0.94f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (isUser) Color(0xFF492027) else AssistantBubble)
+                .padding(horizontal = 13.dp, vertical = 11.dp)
+        ) {
+            Text(
+                if (isUser) "SENHOR" else "ULTRON",
+                color = if (isUser) Color(0xFFFF9BA2) else Red,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(line.text, color = Color(0xFFF1F1F4), fontSize = 14.sp, lineHeight = 20.sp)
         }
     }
 }
