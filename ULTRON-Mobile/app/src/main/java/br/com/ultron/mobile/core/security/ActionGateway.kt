@@ -43,7 +43,12 @@ class ActionGateway(
                 return ActionResult.Blocked("Autenticação do proprietário necessária.")
             }
             if (confirmationId == null) {
-                val challenge = confirmations.issue(request.actionId, request.arguments)
+                val challenge = try {
+                    confirmations.issue(request.actionId, request.arguments)
+                } catch (_: Exception) {
+                    audit.record("CONFIRMATION_ISSUED", request.actionId, request.requestId, "ISSUE_FAILED")
+                    return ActionResult.Blocked("Não foi possível iniciar uma confirmação segura.")
+                }
                 audit.record("CONFIRMATION_ISSUED", request.actionId, request.requestId, "PENDING")
                 return ActionResult.ConfirmationRequired(
                     summary = "Confirme esta ação no dispositivo.",
