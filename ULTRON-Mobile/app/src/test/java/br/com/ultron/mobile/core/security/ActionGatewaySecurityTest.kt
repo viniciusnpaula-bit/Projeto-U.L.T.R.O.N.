@@ -23,7 +23,7 @@ class ActionGatewaySecurityTest {
         val executor = fakeExecutor { executions++; ActionResult.Success("sent") }
         val gateway = ActionGateway(
             executor = executor,
-            confirmations = ConfirmationManager(),
+            confirmations = ConfirmationManager(now = { 100L }),
             audit = noOpAudit(),
             androidPermissionGranted = { true },
             ownerAuthenticated = { true }
@@ -43,7 +43,7 @@ class ActionGatewaySecurityTest {
         val executor = fakeExecutor { executions++; ActionResult.Success("sent") }
         val gateway = ActionGateway(
             executor = executor,
-            confirmations = ConfirmationManager(),
+            confirmations = ConfirmationManager(now = { 100L }),
             audit = noOpAudit(),
             androidPermissionGranted = { true },
             ownerAuthenticated = { true },
@@ -76,7 +76,7 @@ class ActionGatewaySecurityTest {
         }
         val gateway = ActionGateway(
             executor = executor,
-            confirmations = ConfirmationManager(),
+            confirmations = ConfirmationManager(now = { 100L }),
             audit = noOpAudit(),
             androidPermissionGranted = { true },
             ownerAuthenticated = { true },
