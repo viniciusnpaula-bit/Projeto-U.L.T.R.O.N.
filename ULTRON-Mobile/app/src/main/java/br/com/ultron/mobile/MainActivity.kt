@@ -211,7 +211,7 @@ private fun UltronApp() {
                                     status = "FALHA DE AUTENTICAÇÃO"
                                     authenticated = false
                                 } finally {
-                                    submittedPin.fill('\\u0000')
+                                    submittedPin.fill('\u0000')
                                     busy = false
                                 }
                             }
