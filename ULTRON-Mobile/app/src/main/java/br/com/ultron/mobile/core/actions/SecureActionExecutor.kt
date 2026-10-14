@@ -4,15 +4,17 @@ import br.com.ultron.mobile.core.security.ActionPolicyRegistry
 import br.com.ultron.mobile.core.security.ConfirmationVault
 import br.com.ultron.mobile.core.security.Decision
 import br.com.ultron.mobile.core.security.OwnerAuthenticator
-import br.com.ultron.mobile.core.security.RiskLevel
 import br.com.ultron.mobile.core.security.SecurityAudit
 import br.com.ultron.mobile.core.security.SecurityEvent
 import br.com.ultron.mobile.core.security.SecurityEventType
 import br.com.ultron.mobile.core.security.SecurityManager
 
 /**
- * Mandatory gateway for action execution. Platform-specific executors should be
- * private implementation details and never exposed directly to UI/AI callers.
+ * Mandatory policy gate. Keep the delegate private to the composition root and
+ * never expose it directly to UI/AI callers.
+ *
+ * A valid vault token is necessary but not sufficient: sensitive execution also
+ * requires a positive explicit-approval callback. Missing UI wiring fails closed.
  */
 class SecureActionExecutor(
     private val policies: ActionPolicyRegistry,
@@ -20,10 +22,12 @@ class SecureActionExecutor(
     private val confirmations: ConfirmationVault,
     private val audit: SecurityAudit,
     private val permissionGranted: (String) -> Boolean = { true },
-    private val delegate: ActionExecutor
+    private val delegate: ActionExecutor,
+    private val confirmExplicitly: suspend (ActionRequest) -> Boolean = { false }
 ) : ActionExecutor {
     override fun policyFor(actionId: String) = policies.policyFor(actionId)
 
+    /** Creates a short-lived challenge, not a final authorization to execute. */
     fun requestConfirmation(request: ActionRequest): String? {
         val policy = policies.policyFor(request.actionId)
         if (policy == null || SecurityManager.decide(policy, permissionGranted(request.actionId)) != Decision.REQUIRE_CONFIRMATION) {
@@ -35,7 +39,13 @@ class SecureActionExecutor(
             return null
         }
         val id = confirmations.issue(request, ownerAuthenticated = true)
-        audit.record(SecurityEvent(SecurityEventType.CONFIRMATION_ISSUED, request.actionId, if (id == null) "ISSUE_FAILED" else "OWNER_CONFIRMED"))
+        audit.record(
+            SecurityEvent(
+                SecurityEventType.CONFIRMATION_ISSUED,
+                request.actionId,
+                if (id == null) "ISSUE_FAILED" else "PENDING_EXPLICIT_APPROVAL"
+            )
+        )
         return id
     }
 
@@ -50,9 +60,17 @@ class SecureActionExecutor(
                 audit.record(SecurityEvent(SecurityEventType.CONFIRMATION_REJECTED, request.actionId, "INVALID_EXPIRED_OR_REPLAYED"))
                 return ActionResult.ConfirmationRequired("Confirmação válida necessária para esta ação.")
             }
+            val approved = try {
+                confirmExplicitly(request.copy(confirmationId = null))
+            } catch (_: Exception) {
+                false
+            }
+            if (!approved || !owner.isAuthenticated()) {
+                audit.record(SecurityEvent(SecurityEventType.CONFIRMATION_REJECTED, request.actionId, "OWNER_DECLINED_OR_SESSION_EXPIRED"))
+                return ActionResult.Blocked("Ação não confirmada pelo proprietário.")
+            }
         }
         audit.record(SecurityEvent(SecurityEventType.ACTION_ALLOWED, request.actionId, if (decision == Decision.ALLOW) "POLICY_ALLOW" else "CONFIRMED"))
-        // Do not pass confirmation capability downstream; authorization is consumed here.
         return try {
             delegate.execute(request.copy(confirmationId = null))
         } catch (_: Exception) {
