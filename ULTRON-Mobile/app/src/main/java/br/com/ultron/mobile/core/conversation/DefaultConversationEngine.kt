@@ -1,6 +1,8 @@
 package br.com.ultron.mobile.core.conversation
 
 import br.com.ultron.mobile.core.ai.AIProvider
+import br.com.ultron.mobile.core.actions.ActionResult
+import br.com.ultron.mobile.core.security.ActionGateway
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeout
 
@@ -14,7 +16,8 @@ class DefaultConversationEngine(
     private val aiProvider: AIProvider,
     private val timeoutMillis: Long = 20_000L,
     private val maxHistoryMessages: Int = 12,
-    private val maxMessageLength: Int = 4_000
+    private val maxMessageLength: Int = 4_000,
+    private val actionGateway: ActionGateway? = null
 ) : ConversationEngine {
     override suspend fun respond(request: ConversationRequest): Result<ConversationReply> = runCatching {
         require(request.requestId.isNotBlank()) { "Identificador da solicitação inválido." }
@@ -29,9 +32,28 @@ class DefaultConversationEngine(
                 text = local.text,
                 origin = ReplyOrigin.LOCAL_COMMAND
             )
-            is LocalCommandResult.ActionIntent -> throw UnsupportedOperationException(
-                "Intenções de ação precisam ser encaminhadas ao ActionGateway pela camada de aplicação."
-            )
+            is LocalCommandResult.ActionIntent -> {
+                // Fail closed: an action intent never falls through to AI or direct execution.
+                val gateway = actionGateway ?: return@runCatching ConversationReply(
+                    requestId = request.requestId,
+                    text = "Ação bloqueada: o gateway de segurança não está configurado.",
+                    origin = ReplyOrigin.ACTION_RESULT,
+                    actionResult = ActionResult.Blocked("Gateway de segurança não configurado.")
+                )
+                val actionResult = gateway.execute(local.request.copy(requestId = request.requestId))
+                val message = when (actionResult) {
+                    is ActionResult.Success -> actionResult.summary
+                    is ActionResult.Failure -> actionResult.reason
+                    is ActionResult.ConfirmationRequired -> actionResult.summary
+                    is ActionResult.Blocked -> actionResult.reason
+                }
+                return@runCatching ConversationReply(
+                    requestId = request.requestId,
+                    text = message,
+                    origin = ReplyOrigin.ACTION_RESULT,
+                    actionResult = actionResult
+                )
+            }
             LocalCommandResult.NotHandled -> Unit
         }
 
