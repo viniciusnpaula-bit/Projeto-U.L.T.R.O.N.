@@ -122,8 +122,16 @@ class AndroidOwnerAuthenticator(
         val key = keyStore.getKey(keyAlias, null) as? SecretKey ?: error("PIN key unavailable")
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(key)
-        // Encode PIN transiently; do not persist or log it.
-        val bytes = String(pin).toByteArray(Charsets.UTF_8)
-        return try { mac.doFinal(bytes) } finally { bytes.fill(0) }
+        // Bind the random salt to the PIN verifier; neither value is logged or persisted in plaintext.
+        val pinBytes = String(pin).toByteArray(Charsets.UTF_8)
+        val input = ByteArray(salt.size + pinBytes.size)
+        return try {
+            System.arraycopy(salt, 0, input, 0, salt.size)
+            System.arraycopy(pinBytes, 0, input, salt.size, pinBytes.size)
+            mac.doFinal(input)
+        } finally {
+            pinBytes.fill(0)
+            input.fill(0)
+        }
     }
 }
