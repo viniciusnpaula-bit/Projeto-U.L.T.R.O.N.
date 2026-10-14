@@ -29,7 +29,10 @@ class AndroidOwnerAuthenticator(
 
     @Synchronized
     fun enroll(pin: CharArray): Boolean {
-        if (pin.size < 6 || pin.any { !it.isDigit() }) return false
+        if (pin.size < 6 || pin.any { !it.isDigit() }) {
+            pin.fill('\u0000')
+            return false
+        }
         return try {
             ensureKey()
             val salt = ByteArray(32).also(SecureRandom()::nextBytes)
@@ -40,20 +43,31 @@ class AndroidOwnerAuthenticator(
                 .putInt("failed_attempts", 0)
                 .putLong("locked_until", 0L)
                 .commit()
+        } catch (_: Exception) {
+            false
         } finally {
             pin.fill('\u0000')
         }
     }
 
-    override suspend fun verifyPin(pin: CharArray): Boolean {
+    // Suspend API delegates to a synchronized non-suspending critical section:
+    // concurrent attempts cannot race the failure counter or session state.
+    override suspend fun verifyPin(pin: CharArray): Boolean = verifyPinSync(pin)
+
+    @Synchronized
+    private fun verifyPinSync(pin: CharArray): Boolean {
         try {
             val now = clock()
             if (now < prefs.getLong("locked_until", 0L)) {
                 authenticatedUntil = 0L
                 return false
             }
-            val saltText = prefs.getString("pin_salt", null) ?: return false
-            val verifierText = prefs.getString("pin_verifier", null) ?: return false
+            val saltText = prefs.getString("pin_salt", null)
+            val verifierText = prefs.getString("pin_verifier", null)
+            if (saltText == null || verifierText == null) {
+                authenticatedUntil = 0L
+                return false
+            }
             val salt = Base64.decode(saltText, Base64.NO_WRAP)
             val expected = Base64.decode(verifierText, Base64.NO_WRAP)
             val actual = hmac(pin, salt)
@@ -108,7 +122,6 @@ class AndroidOwnerAuthenticator(
         val key = keyStore.getKey(keyAlias, null) as? SecretKey ?: error("PIN key unavailable")
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(key)
-        mac.update(salt)
         // Encode PIN transiently; do not persist or log it.
         val bytes = String(pin).toByteArray(Charsets.UTF_8)
         return try { mac.doFinal(bytes) } finally { bytes.fill(0) }
