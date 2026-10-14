@@ -1,5 +1,7 @@
 package br.com.ultron.mobile.core.conversation
 
+import br.com.ultron.mobile.core.actions.ActionResult
+
 /**
  * Domain contracts for the independent Android assistant.
  *
@@ -25,7 +27,8 @@ data class ConversationRequest(
 enum class ReplyOrigin {
     ONLINE_AI,
     LOCAL_COMMAND,
-    LOCAL_NOTICE
+    LOCAL_NOTICE,
+    ACTION_RESULT
 }
 
 data class ConversationReply(
@@ -33,7 +36,9 @@ data class ConversationReply(
     val text: String,
     val origin: ReplyOrigin,
     /** Null for local replies; otherwise the provider identifier, never a secret. */
-    val providerId: String? = null
+    val providerId: String? = null,
+    /** Present only when a recognized action intent was submitted to the security gateway. */
+    val actionResult: ActionResult? = null
 )
 
 enum class ConnectivityStatus { ONLINE, OFFLINE, UNKNOWN }
@@ -50,7 +55,7 @@ sealed interface ConversationFailure {
 /**
  * Orchestrates local commands and online AI. Local command routing must happen before
  * remote generation, and local commands must remain usable when connectivity is absent.
- * Any action intent returned by the local router must go through ActionGateway.
+ * Action intents are sent only through the injected security gateway.
  */
 interface ConversationEngine {
     suspend fun respond(request: ConversationRequest): Result<ConversationReply>
