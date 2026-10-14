@@ -37,12 +37,14 @@ class AndroidOwnerAuthenticator(
             ensureKey()
             val salt = ByteArray(32).also(SecureRandom()::nextBytes)
             val verifier = hmac(pin, salt)
-            prefs.edit()
+            val saved = prefs.edit()
                 .putString("pin_salt", Base64.encodeToString(salt, Base64.NO_WRAP))
                 .putString("pin_verifier", Base64.encodeToString(verifier, Base64.NO_WRAP))
                 .putInt("failed_attempts", 0)
                 .putLong("locked_until", 0L)
                 .commit()
+            authenticatedUntil = if (saved) clock() + sessionTtlMillis else 0L
+            saved
         } catch (_: Exception) {
             false
         } finally {
