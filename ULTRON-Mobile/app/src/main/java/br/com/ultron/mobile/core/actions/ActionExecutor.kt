@@ -13,7 +13,7 @@ data class ActionRequest(
 sealed interface ActionResult {
     data class Success(val summary: String) : ActionResult
     data class Failure(val reason: String) : ActionResult
-    data class ConfirmationRequired(val summary: String) : ActionResult
+    data class ConfirmationRequired(val summary: String, val confirmationId: String? = null) : ActionResult
     data class Blocked(val reason: String) : ActionResult
 }
 
