@@ -173,7 +173,7 @@ private fun UltronApp() {
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = pin,
-                        onValueChange = { value -> if (value.length <= 12 && value.all(Char::isDigit)) pin = value },
+                        onValueChange = { value -> if (value.length <= 12 && value.all { it.isDigit() }) pin = value },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         enabled = !busy,
