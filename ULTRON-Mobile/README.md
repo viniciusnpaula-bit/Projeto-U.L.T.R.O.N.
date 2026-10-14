@@ -26,11 +26,17 @@ gradle wrapper --gradle-version 8.9
 APK de debug esperado:
 `app/build/outputs/apk/debug/app-debug.apk`
 
-## Segurança
-- Não inclua chaves da Groq no APK nem no repositório.
-- As ações são apenas contratos nesta etapa; não há execução de ações externas implementada.
-- Níveis de risco são definidos no código, não pela IA.
-- Não configure credenciais reais até o backend seguro ser implementado.
+## Segurança (hardening em andamento)
+- `SecurityManager` decide a política; ações desconhecidas, críticas e irreversíveis são negadas.
+- `SecureActionExecutor` é o gateway central para execução. Os executores de plataforma devem ficar encapsulados e não ser chamados diretamente pela UI/IA.
+- Ações HIGH exigem sessão autenticada do proprietário e uma confirmação de uso único, vinculada ao ID da ação e aos argumentos, com expiração monotônica. Tokens pendentes ficam apenas em memória e desaparecem ao encerrar o processo.
+- `AndroidOwnerAuthenticator` permite cadastrar PIN de 6+ dígitos. O PIN não é persistido; o verificador usa HMAC com chave não exportável no Android Keystore, com bloqueio progressivo após falhas. Não há PIN padrão.
+- `BiometricOwnerGate` fornece autenticação biométrica forte opcional para uma `FragmentActivity`; o fluxo ainda precisa ser ligado a uma tela de configuração/confirmação.
+- `SecurityAudit` registra metadados de autorização e bloqueio; não passe PIN, token, prompt ou argumentos sensíveis para o logger.
+- A dependência AndroidX Biometric foi adicionada como preparação; a tela/fluxo de biometria ainda precisa ser conectado e testado no dispositivo.
+- Não inclua chaves da Groq no APK nem no repositório. A integração de IA deve chamar um backend que mantém o segredo no servidor.
+- Ainda não há ações reais de plataforma integradas nem fluxo de cadastro/login conectado à interface. Não trate este branch como versão pronta para uso.
+
 
 ## GitHub Actions
 Workflow em `.github/workflows/android.yml`. Ele configura JDK 17, Android SDK e Gradle 8.9, executa testes e gera o APK de debug.

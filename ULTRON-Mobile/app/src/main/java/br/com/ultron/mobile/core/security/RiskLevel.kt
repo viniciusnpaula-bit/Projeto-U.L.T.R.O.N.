@@ -1,7 +1,6 @@
 package br.com.ultron.mobile.core.security
 
 enum class RiskLevel { LOW, MEDIUM, HIGH, CRITICAL }
-
 enum class Decision { ALLOW, REQUIRE_CONFIRMATION, DENY }
 
 data class ActionPolicy(
@@ -12,6 +11,11 @@ data class ActionPolicy(
     val irreversible: Boolean = false
 )
 
+/**
+ * Central policy engine. CRITICAL/irreversible actions are denied regardless of
+ * request arguments or confirmation. HIGH-risk actions can only proceed through
+ * SecureActionExecutor after owner authentication and a single-use confirmation.
+ */
 object SecurityManager {
     fun decide(policy: ActionPolicy, androidPermissionGranted: Boolean = true): Decision {
         if (!policy.allowlisted) return Decision.DENY

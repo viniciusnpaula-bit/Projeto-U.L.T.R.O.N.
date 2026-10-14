@@ -1,4 +1,5 @@
 package br.com.ultron.mobile.core.security
+
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -10,14 +11,63 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-class AndroidSecureSecretStore(context:Context):SecureSecretStore {
- private val prefs=context.applicationContext.getSharedPreferences("ultron_secure_v1",Context.MODE_PRIVATE)
- private val alias="ultron_secure_store_key_v1"
- override fun read(key:String):String? {
-  val raw=prefs.getString(key,null)?:return null
-  return try { val b=ByteBuffer.wrap(Base64.decode(raw,Base64.NO_WRAP));val n=b.int;require(n in 12..16&&b.remaining()>n);val iv=ByteArray(n).also(b::get);val data=ByteArray(b.remaining()).also(b::get);Cipher.getInstance("AES/GCM/NoPadding").run{init(Cipher.DECRYPT_MODE,key(),GCMParameterSpec(128,iv));String(doFinal(data),Charsets.UTF_8)} }catch(_:Exception){null}
- }
- override fun write(key:String,value:String) { val c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.ENCRYPT_MODE,key());val iv=c.iv;val data=c.doFinal(value.toByteArray());val encoded=ByteBuffer.allocate(4+iv.size+data.size).putInt(iv.size).put(iv).put(data).array();check(prefs.edit().putString(key,Base64.encodeToString(encoded,Base64.NO_WRAP)).commit()) }
- override fun delete(key:String){check(prefs.edit().remove(key).commit())}
- private fun key():SecretKey { val ks=KeyStore.getInstance("AndroidKeyStore").apply{load(null)};(ks.getKey(alias,null) as? SecretKey)?.let{return it};val g=KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES,"AndroidKeyStore");g.init(KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT).setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).setRandomizedEncryptionRequired(true).build());return g.generateKey() }
+/** AES-GCM encrypted preferences backed by a non-exportable Android Keystore key. */
+class AndroidSecureSecretStore(context: Context) : SecureSecretStore {
+    private val prefs = context.applicationContext.getSharedPreferences("ultron_secure_v1", Context.MODE_PRIVATE)
+    private val alias = "ultron_secure_store_key_v1"
+
+    override fun read(key: String): String? {
+        if (key.isBlank()) return null
+        val raw = prefs.getString(key, null) ?: return null
+        return try {
+            val buffer = ByteBuffer.wrap(Base64.decode(raw, Base64.NO_WRAP))
+            val ivLength = buffer.int
+            require(ivLength in 12..16 && buffer.remaining() > ivLength + 16)
+            val iv = ByteArray(ivLength).also(buffer::get)
+            val encrypted = ByteArray(buffer.remaining()).also(buffer::get)
+            Cipher.getInstance("AES/GCM/NoPadding").run {
+                init(Cipher.DECRYPT_MODE, secretKey(), GCMParameterSpec(128, iv))
+                updateAAD(key.toByteArray(Charsets.UTF_8))
+                String(doFinal(encrypted), Charsets.UTF_8)
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override fun write(key: String, value: String) {
+        require(key.isNotBlank()) { "Secret key must not be blank" }
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey())
+        cipher.updateAAD(key.toByteArray(Charsets.UTF_8))
+        val iv = cipher.iv
+        val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+        val packed = ByteBuffer.allocate(4 + iv.size + encrypted.size)
+            .putInt(iv.size).put(iv).put(encrypted).array()
+        check(prefs.edit().putString(key, Base64.encodeToString(packed, Base64.NO_WRAP)).commit()) {
+            "Could not persist encrypted secret"
+        }
+    }
+
+    override fun delete(key: String) {
+        require(key.isNotBlank()) { "Secret key must not be blank" }
+        check(prefs.edit().remove(key).commit()) { "Could not delete secret" }
+    }
+
+    private fun secretKey(): SecretKey {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        (keyStore.getKey(alias, null) as? SecretKey)?.let { return it }
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        generator.init(
+            KeyGenParameterSpec.Builder(
+                alias,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setRandomizedEncryptionRequired(true)
+                .build()
+        )
+        return generator.generateKey()
+    }
 }
