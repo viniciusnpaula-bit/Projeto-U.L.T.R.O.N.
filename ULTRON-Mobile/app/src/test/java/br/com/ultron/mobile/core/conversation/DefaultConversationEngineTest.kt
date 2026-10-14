@@ -1,5 +1,7 @@
 package br.com.ultron.mobile.core.conversation
 
+import br.com.ultron.mobile.core.actions.ActionRequest
+import br.com.ultron.mobile.core.actions.ActionResult
 import br.com.ultron.mobile.core.ai.AIProvider
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -21,6 +23,13 @@ class DefaultConversationEngineTest {
 
     private class FakeConnectivity(var current: ConnectivityStatus) : ConnectivityMonitor {
         override fun status(): ConnectivityStatus = current
+    }
+
+    private class ActionIntentRouter : LocalCommandRouter {
+        override suspend fun route(requestId: String, input: String): LocalCommandResult =
+            LocalCommandResult.ActionIntent(
+                ActionRequest(requestId = "router-controlled-id", actionId = "test.action", arguments = emptyMap())
+            )
     }
 
     @Test
@@ -69,5 +78,19 @@ class DefaultConversationEngineTest {
         val result = engine.respond(ConversationRequest("req-4", "  "))
         assertFalse(result.isSuccess)
         assertEquals(0, provider.calls)
+    }
+
+    @Test
+    fun actionIntentWithoutGatewayFailsClosedAndNeverCallsAi() = runBlocking {
+        val provider = FakeProvider()
+        val engine = DefaultConversationEngine(
+            ActionIntentRouter(), FakeConnectivity(ConnectivityStatus.ONLINE), provider
+        )
+        val result = engine.respond(ConversationRequest("req-5", "executar ação")).getOrThrow()
+        assertEquals(ReplyOrigin.ACTION_RESULT, result.origin)
+        assertTrue(result.actionResult is ActionResult.Blocked)
+        assertTrue(result.text.contains("gateway de segurança"))
+        assertEquals(0, provider.calls)
+        assertEquals("req-5", result.requestId)
     }
 }
