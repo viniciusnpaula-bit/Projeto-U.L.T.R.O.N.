@@ -102,9 +102,11 @@ private fun UltronApp() {
         ActionGateway(
             executor = MobileStatusExecutor(),
             confirmations = ConfirmationManager(),
-            audit = SecurityAuditSink { event, actionId, requestId, outcome ->
-                // Metadata only: never log PINs, arguments, confirmation IDs or secrets.
-                Log.i("ULTRON_SECURITY", "event=$event;action=$actionId;request=$requestId;outcome=$outcome")
+            audit = object : SecurityAuditSink {
+                override fun record(event: String, actionId: String, requestId: String, outcome: String) {
+                    // Metadata only: never log PINs, arguments, confirmation IDs or secrets.
+                    Log.i("ULTRON_SECURITY", "event=$event;action=$actionId;request=$requestId;outcome=$outcome")
+                }
             },
             androidPermissionGranted = { true },
             ownerAuthenticated = { authenticator.isAuthenticated() },
