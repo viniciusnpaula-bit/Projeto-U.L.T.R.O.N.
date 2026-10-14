@@ -5,7 +5,9 @@ import br.com.ultron.mobile.core.security.ActionPolicy
 data class ActionRequest(
     val requestId: String,
     val actionId: String,
-    val arguments: Map<String, String>
+    val arguments: Map<String, String>,
+    /** Opaque one-use approval identifier. Never accepted as proof by itself. */
+    val confirmationId: String? = null
 )
 
 sealed interface ActionResult {
@@ -15,6 +17,7 @@ sealed interface ActionResult {
     data class Blocked(val reason: String) : ActionResult
 }
 
+/** Implementations perform work only; callers should expose them through SecureActionExecutor. */
 interface ActionExecutor {
     fun policyFor(actionId: String): ActionPolicy?
     suspend fun execute(request: ActionRequest): ActionResult
