@@ -3,7 +3,8 @@ package br.com.ultron.mobile.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import br.com.ultron.mobile.core.ai.UnconfiguredAIProvider
+import br.com.ultron.mobile.BuildConfig
+import br.com.ultron.mobile.core.ai.ProtectedBackendAIProvider
 import br.com.ultron.mobile.core.conversation.AndroidConnectivityMonitor
 import br.com.ultron.mobile.core.conversation.BasicLocalCommandRouter
 import br.com.ultron.mobile.core.conversation.ConversationEngine
@@ -36,14 +37,14 @@ data class ChatUiState(
     ),
     val input: String = "",
     val isProcessing: Boolean = false,
-    val notice: String? = "IA online ainda não configurada; comandos locais funcionam sem o PC."
+    val notice: String? = if (BuildConfig.ULTRON_AI_BASE_URL.isBlank()) "IA online pendente: configure a URL HTTPS do backend. Comandos locais funcionam sem o PC." else "Backend de IA configurado."
 )
 
 class UltronViewModel(application: Application) : AndroidViewModel(application) {
     private val engine: ConversationEngine = DefaultConversationEngine(
         localRouter = BasicLocalCommandRouter(),
         connectivity = AndroidConnectivityMonitor(application),
-        aiProvider = UnconfiguredAIProvider()
+        aiProvider = ProtectedBackendAIProvider(BuildConfig.ULTRON_AI_BASE_URL)
     )
 
     private val _state = MutableStateFlow(ChatUiState())
@@ -87,7 +88,7 @@ class UltronViewModel(application: Application) : AndroidViewModel(application) 
                 val reply = result.getOrElse { error ->
                     val message = when (error) {
                         is CancellationException -> throw error
-                        else -> "Não foi possível processar a mensagem. A integração segura com a IA online ainda está pendente."
+                        else -> error.message?.takeIf { it.isNotBlank() } ?: "Não foi possível processar a mensagem."
                     }
                     br.com.ultron.mobile.core.conversation.ConversationReply(
                         requestId = requestId,
