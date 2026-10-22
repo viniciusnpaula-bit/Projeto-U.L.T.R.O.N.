@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+BRANCH = "ultron-desktop-1.9.4"   # branch de release; o main é protegido por PR
 DIST = ROOT / "build" / "dist"
 
 
@@ -77,10 +78,13 @@ def main() -> int:
     else:
         print("nada novo para commitar; enviando o que já existe.")
 
-    push = run(["git", "push", "origin", "HEAD:main"])
+    # O main deste repositório tem regra de proteção ("changes must be made through a
+    # pull request"), então publicamos numa branch de release. Assim o push não é
+    # recusado e o Release (que é o que o app usa) continua funcionando.
+    push = run(["git", "push", "origin", f"HEAD:{BRANCH}"])
     print(push.stdout[-1500:] or push.stderr[-1500:])
     if push.returncode != 0:
-        print("\nPUSH FALHOU: configure a credencial do git (gh auth login) e rode de novo.")
+        print("\nPUSH FALHOU: veja a mensagem do git acima (credencial ou regra do repositório).")
         return 2
 
     if args.no_release:
