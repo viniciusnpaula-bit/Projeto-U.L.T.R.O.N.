@@ -1,0 +1,45 @@
+U.L.T.R.O.N. DESKTOP — INSTALAÇÃO (3 passos)
+
+1. Instale Python 3.10+ (64 bits) e Node.js LTS. Ambos marcam "adicionar ao PATH" por padrão.
+   Python: https://www.python.org/downloads/windows/
+   Node.js: https://nodejs.org
+
+2. Extraia o ZIP para uma pasta simples, por exemplo C:\ultron.
+
+3. Execute ULTRON-Setup.exe (duplo clique). Não precisa de administrador.
+   Ele mostra o progresso, cria o atalho e verifica tudo no final.
+
+Depois abra pelo atalho "U.L.T.R.O.N. Desktop" ou pelo ULTRON.exe da pasta.
+
+PRIMEIRO USO
+- O instalador cria o arquivo .env e pode abri-lo para você colar a chave de IA.
+- Chave grátis do Gemini: https://aistudio.google.com/apikey
+- Sem chave o painel abre, mas a conversa com IA não responde. Os comandos locais funcionam.
+
+O QUE MUDOU NO INSTALADOR (por que não é mais um .bat)
+- setup.bat foi removido. Um .bat que chama python, pip e npm é o padrão que mais
+  antivírus marca como suspeito, e ele não tinha ícone, versão nem assinatura.
+- Agora existe um único programa: ULTRON-Setup.exe (ícone oficial, versão 1.9.4,
+  descrição, log em logs\setup.log). Ele não usa %TEMP%, não pede elevação,
+  não escreve no registro e não baixa nada além das dependências listadas.
+- Reexecutar o instalador conserta (repair) e atualiza sem refazer tudo.
+- Desinstalar: ULTRON-Setup.exe --uninstall (mantém .env, dados\ e logs\).
+- Diagnóstico sem abrir o painel: ULTRON.exe --diagnostico
+
+INTERFACE E VOZ
+- O Desktop inicia o núcleo ULTRON e a API local (só em 127.0.0.1, com token por sessão).
+- O núcleo tenta Gemini, Groq e NVIDIA Build na ordem de PROVEDORES no .env.
+- O microfone é um botão: pausa/retoma a escuta contínua do núcleo.
+- Diga "Ei, Ultron" seguido do comando.
+- Ações rápidas na tela inicial: navegador, Spotify, música, volume, Rocket League, modo jogo.
+- Fechar o painel encerra a API e o núcleo.
+
+SEGURANÇA
+- Ações críticas pedem PIN (ULTRON_PIN no .env), digitado no teclado ou no Telegram, nunca por voz.
+- Comandos passam pelo núcleo e seguem permissoes.json.
+- Não exponha a API na rede. Proteja o .env e não compartilhe suas chaves.
+- Parada de emergência: Ctrl+Alt+X.
+
+AJUDA
+- Se algo falhar, envie logs\setup.log (instalação) ou logs\ultron.log (execução).
+- ULTRON.exe --diagnostico mostra o que está faltando, sem alterar nada.

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark"><title>U.L.T.R.O.N.</title>
+<link rel="icon" type="image/png" href="icons/ULTRON-Logo.png"><link rel="stylesheet" href="style.css">
+<script src="zoom-lock.js"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="ultron-version" content="1.9.4">
+</head>
+<body>
+<canvas id="field" aria-hidden="true"></canvas>
+<div class="vignette" aria-hidden="true"></div>
+
+<div class="stage" id="stage">
+
+  <!-- ── faixa superior: só sinais reais ─────────────────────────────── -->
+  <header class="topline">
+    <div class="mark">
+      <span class="mark-glyph" aria-hidden="true"></span>
+      <div><b>U.L.T.R.O.N.</b><small>núcleo local</small></div>
+    </div>
+    <div class="signals" role="group" aria-label="Sinais do sistema">
+      <span class="signal" id="signalCore"><i class="led"></i><span>núcleo</span><b id="signalCoreText">—</b></span>
+      <span class="signal" id="signalMic"><i class="led" id="voiceLed"></i><span>voz</span><b id="micVal">aguardando</b></span>
+      <span class="signal" id="signalCpu"><span>cpu</span><b id="cpuVal">—</b></span>
+      <span class="signal" id="signalRam"><span>ram</span><b id="ramVal">—</b></span>
+      <span class="signal" id="signalDisk"><span>disco</span><b id="diskVal">—</b></span>
+    </div>
+    <div class="clock">
+      <b id="clockTime">--:--</b>
+      <span id="clockDate">—</span>
+    </div>
+    <button class="ghost icon" id="openSettings" aria-label="Ajustes do sistema" title="Ajustes do sistema (Ctrl+,)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v3M12 18.4v3M4.2 7.3l2.6 1.5M17.2 15.2l2.6 1.5M4.2 16.7l2.6-1.5M17.2 8.8l2.6-1.5"/></svg>
+    </button>
+  </header>
+
+  <!-- ── corpo: câmara + fita de eventos ─────────────────────────────── -->
+  <div class="chamber-row">
+
+      <!-- bat-papo de voz: o que foi dito e o que o núcleo respondeu -->
+      <section class="comms" aria-label="Conversa de voz">
+        <header class="comms-head">
+          <span class="eyebrow">conversa de voz</span>
+          <span class="comms-live" id="commsLive" title="Escuta ativa">ao vivo</span>
+          <button class="ghost tiny" id="scrollLatest" title="Ir para a última fala">última ↓</button>
+        </header>
+        <div class="comms-list" id="commsList" aria-live="polite" aria-label="Mensagens da conversa">
+          <div class="comms-empty" id="commsEmpty">
+            <b>Ainda não há conversa.</b>
+            <span>Diga “Ei, Ultron” — cada fala reconhecida e cada resposta aparecem aqui.</span>
+          </div>
+        </div>
+        <div class="comms-foot">
+          <span class="comms-count" id="commsCount">0 falas</span>
+          <span class="tape-sep" aria-hidden="true"></span>
+          <span class="comms-note">só voz · o que você escreve aparece na câmara</span>
+        </div>
+      </section>
+
+    <main class="chamber" id="chamber" data-state="connecting" aria-label="Câmara do núcleo">
+
+      <div class="core" id="core" data-state="connecting">
+        <canvas id="orbCanvas" role="img" aria-label="Núcleo animado do ULTRON"></canvas>
+        <div class="state-word" id="stateWord" aria-live="polite">CONECTANDO</div>
+        <div class="state-hint" id="stateHint">Estabelecendo canal com o núcleo local</div>
+      </div>
+
+      <div class="reply" id="reply" aria-live="polite">
+        <span class="reply-caret" aria-hidden="true"></span>
+        <p id="responseText">Pronto. Diga “Ei, Ultron” ou escreva abaixo.</p>
+      </div>
+
+      <nav class="verbs" aria-label="Ações rápidas">
+        <button class="verb" data-command="Abra o navegador"><b>↗</b><span>Abrir navegador</span></button>
+        <button class="verb" data-command="Abra o Spotify"><b>♪</b><span>Spotify</span></button>
+        <button class="verb" data-command="Pause ou retome a música"><b>❚❚</b><span>Mídia</span></button>
+        <button class="verb" data-command="Aumente o volume do PC"><b>+</b><span>Volume</span></button>
+        <button class="verb" data-command="Abra o Rocket League"><b>◆</b><span>Abrir Rocket League</span></button>
+        <button class="verb" data-command="Ative o modo jogo"><b>⚡</b><span>Modo jogo</span></button>
+        <button class="verb" data-command="Minimize tudo"><b>▁</b><span>Minimizar tudo</span></button>
+      </nav>
+
+      <!-- ── linha de comando: o único lugar onde se escreve ─────────── -->
+      <form class="console" id="consoleForm" autocomplete="off">
+        <span class="prompt" aria-hidden="true">›</span>
+        <label class="sr-only" for="commandInput">Comando para o ULTRON</label>
+        <input id="commandInput" placeholder="Fale com o ULTRON…   (“Ei, Ultron, abra o navegador”)" maxlength="4000" spellcheck="false">
+        <button type="button" class="ghost mic" id="micButton" aria-pressed="false" title="Pausar escuta contínua">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11v1.5a6.5 6.5 0 0 0 13 0V11M12 19v2.5M8.5 21.5h7"/></svg>
+          <span id="micButtonLabel">escutando</span>
+        </button>
+        <button type="submit" class="send" id="sendButton" title="Enviar (Enter)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12 20 4.5 13.5 20l-2.2-6.1z"/></svg>
+        </button>
+        <div class="mic-meter" id="micMeter" aria-hidden="true"><i id="micLevelBar"></i></div>
+      </form>
+      <div class="console-hint" id="consoleHint">Enter para enviar · Esc para limpar · Ctrl+, ajustes</div>
+    </main>
+
+    <aside class="side" aria-label="Eventos da sessão">
+      <section class="tape" id="tape" aria-label="Eventos da sessão">
+      <div class="tape-head">
+        <span class="eyebrow">sessão</span>
+        <b id="sessionCount">0</b>
+        <button class="ghost tiny" id="clearHistory">limpar</button>
+      </div>
+      <div class="tape-list" id="tapeList" aria-live="polite">
+        <div class="tape-empty">Nada ainda nesta sessão.<br><span>O que você disser aparece aqui.</span></div>
+      </div>
+      <div class="tape-foot">
+        <span class="signal" id="signalApi"><i class="led" id="apiLed"></i><span>api</span><b id="apiVal">—</b></span>
+        <span class="tape-sep" aria-hidden="true"></span>
+        <span class="tape-meta" id="autostartVal">início —</span>
+        <button class="ghost tiny" id="toggleHud" title="Painel flutuante">janela flutuante</button>
+      </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<!-- ── gaveta única de ajustes (substitui 7 páginas) ─────────────────── -->
+<div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+<section class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" hidden>
+  <header class="drawer-head">
+    <div><span class="eyebrow">ajustes</span><h2 id="drawerTitle">Sistema</h2></div>
+    <button type="button" class="drawer-close" id="closeDrawer" aria-label="Fechar ajustes" title="Fechar (Esc)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <span>fechar</span>
+    </button>
+  </header>
+
+  <div class="drawer-body">
+    <section class="block">
+      <h3>Cor do núcleo</h3>
+      <div class="swatches" id="themeSwatches" role="radiogroup" aria-label="Tema visual">
+        <button role="radio" class="swatch" data-theme="ultron" aria-label="U.L.T.R.O.N. (vermelho)"><i></i><span>ULTRON</span></button>
+        <button role="radio" class="swatch" data-theme="jarvis" aria-label="JARVIS (ciano)"><i></i><span>JARVIS</span></button>
+        <button role="radio" class="swatch" data-theme="amber" aria-label="VISÃO (âmbar)"><i></i><span>VISÃO</span></button>
+        <button role="radio" class="swatch" data-theme="emerald" aria-label="EDITH (verde)"><i></i><span>EDITH</span></button>
+      </div>
+    </section>
+
+    <section class="block">
+      <h3>Voz</h3>
+      <p class="muted">A captura é do núcleo; aqui você só escolhe a entrada e pausa a escuta.</p>
+      <div class="field-row">
+        <label class="sr-only" for="microphoneSelect">Microfone</label>
+        <select id="microphoneSelect"><option value="">carregando…</option></select>
+        <button class="ghost" id="refreshMicrophones">atualizar</button>
+      </div>
+      <p class="micro nano" id="microphoneDeviceStatus" role="status">aguardando lista</p>
+      <div class="field-row">
+        <button class="solid" id="saveMicrophone">usar este microfone</button>
+        <button class="ghost" id="voiceStart">pausar escuta</button>
+      </div>
+      <p class="muted nano" id="voicePageStatus">—</p>
+    </section>
+
+    <section class="block">
+      <h3>Canal local</h3>
+      <div class="kv"><span>núcleo</span><b id="coreVal">—</b></div>
+      <div class="kv"><span>api local</span><b id="apiServiceVal">—</b></div>
+      <div class="kv"><span>estado</span><b id="coreState">—</b></div>
+      <div class="kv"><span>sessão</span><b id="authStatus">não verificada</b></div>
+      <div class="field-row">
+        <button class="ghost" id="testConnection">verificar conexão</button>
+        <button class="danger" id="emergencyStopButton">parada de emergência</button>
+      </div>
+      <p class="muted nano" id="settingsResult"></p>
+    </section>
+  </div>
+  <footer class="drawer-foot">
+    <div class="update-row">
+      <button class="ghost" id="updateCheck" title="Procurar a versão mais nova no GitHub">verificar atualização</button>
+      <button class="solid" id="updateApply" hidden>Aplicar e reiniciar</button>
+      <button class="ghost" id="updateRollback" hidden title="Voltar para a versão anterior">desfazer</button>
+    </div>
+    <p class="update-line" id="updateLine" role="status" aria-live="polite">versão <b id="updateVersion">1.9.4</b> · <span id="updateState">não verificado</span></p>
+    <p class="update-notes" id="updateNotes" hidden></p>
+    <span class="update-note">Fechar a janela encerra a API e libera o microfone.</span>
+  </footer>
+</section>
+
+<!-- nós mantidos para compatibilidade com o estado do núcleo -->
+<div class="sr-only" aria-hidden="true">
+  <span id="sideDot"></span><span id="sideStatus"></span><span id="sideInfo"></span>
+  <span id="headerLed"></span><span id="systemBadge"></span>
+  <span id="heroStatus"></span><span id="micDetail"></span><span id="micLevelVal"></span>
+  <span id="systemMicVal"></span><span id="coreLed"></span><span id="cpuBar"></span>
+  <span id="ramBar"></span><span id="diskBar"></span><span id="uptime"></span>
+  <span id="orbState"></span><span id="orbResponse"></span><span id="coreServiceVal"></span>
+  <span id="memoryList"></span><span id="activityFeed"></span><span id="recentList"></span>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="preview-mock.js"></script>
+<script type="module" src="app.js"></script>
+</body></html>

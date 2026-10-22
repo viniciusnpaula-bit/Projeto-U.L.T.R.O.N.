@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>U.L.T.R.O.N. — flutuante</title>
+<link rel="stylesheet" href="mini-hud.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+</head>
+<body>
+<!-- Janela flutuante: o mesmo núcleo em miniatura, resposta recente e três verbos. -->
+<header class="hud-top">
+  <span class="hud-dot" id="hudDot"></span>
+  <b id="hudTitle">U.L.T.R.O.N.</b>
+  <span class="hud-spacer"></span>
+  <button class="hud-x" id="hudReturn" title="Voltar para a janela principal">↩</button>
+</header>
+
+<main class="hud-body">
+  <div class="hud-orb"><canvas id="hudOrb" aria-hidden="true"></canvas></div>
+  <p class="hud-response" id="hudResponse">aguardando o núcleo</p>
+  <div class="hud-states">
+    <span><i id="hudCore"></i><span id="hudCoreText">—</span></span>
+    <span><i id="hudMic"></i><span id="hudMicText">—</span></span>
+  </div>
+</main>
+
+<footer class="hud-verbs">
+  <button data-hud-action="browser" title="Abrir navegador">↗</button>
+  <button data-hud-action="media" title="Pausar / retomar mídia">❚❚</button>
+  <button data-hud-action="volume" title="Aumentar volume">+</button>
+  <button data-hud-action="rocket" title="Abrir Rocket League">◆</button>
+  <button data-hud-action="game" title="Modo jogo">⚡</button>
+  <button data-hud-action="minimize" title="Minimizar tudo">▁</button>
+</footer>
+<script type="module" src="mini-hud.js"></script>
+</body></html>

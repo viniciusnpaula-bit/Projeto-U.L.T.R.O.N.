@@ -1,0 +1,66 @@
+{
+  "name": "ultron-desktop",
+  "version": "1.9.4",
+  "description": "U.L.T.R.O.N. Desktop para Windows — interface nativa baseada na camada web do ULTRON",
+  "main": "main.js",
+  "author": "U.L.T.R.O.N.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^35.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.ultron.desktop",
+    "productName": "U.L.T.R.O.N. Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "mini-preload.js",
+      "api.js",
+      "site/package.json",
+      "site/index.html",
+      "site/icons/ULTRON-Logo.png",
+      "site/icons/icon-192.svg",
+      "site/icons/icon-512.svg",
+      "site/mini-hud.html",
+      "site/style.css",
+      "site/mini-hud.css",
+      "site/app.js",
+      "site/mini-hud.js",
+      "assets/ULTRON.ico",
+      "site/src/real.js",
+      "package.json",
+      "site/src/orb.js",
+      "site/preview-mock.js",
+      "site/zoom-lock.js"
+    ],
+    "win": {
+      "icon": "assets/ULTRON.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "artifactName": "ULTRON-Desktop-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "installerIcon": "assets/ULTRON.ico",
+      "uninstallerIcon": "assets/ULTRON.ico",
+      "installerHeaderIcon": "assets/ULTRON.ico",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "ULTRON-Desktop-${version}-Portable.${ext}"
+    }
+  }
+}

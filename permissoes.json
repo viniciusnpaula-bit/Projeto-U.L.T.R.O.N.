@@ -1,0 +1,50 @@
+{
+  "versao": 2,
+
+  "confirmacao": {
+    "baixo": false,
+    "medio": "fora_da_allowlist",
+    "alto": true,
+    "critico": true
+  },
+
+  "timeouts": {
+    "confirmacao_voz": 6,
+    "confirmacao_teclado": 20,
+    "confirmacao_telegram": 60
+  },
+
+  "allowlist": {
+    "programas": {
+      "bloco de notas": "notepad",
+      "calculadora": "calc",
+      "paint": "mspaint",
+      "explorador de arquivos": "explorer",
+      "gerenciador de tarefas": "taskmgr",
+      "configurações": "ms-settings:",
+      "chrome": "chrome",
+      "edge": "msedge",
+      "spotify": "spotify:",
+      "word": "winword",
+      "excel": "excel"
+    },
+    "aceitar_apps_instalados": true,
+    "diretorios": [
+      "~/Desktop",
+      "~/Documents",
+      "~/Downloads",
+      "~/Pictures",
+      "~/OneDrive/Desktop",
+      "~/OneDrive/Documentos"
+    ],
+    "operacoes": ["arquivo.criar", "pasta.criar", "arquivo.mover"],
+    "teclas_seguras": ["playpause", "nexttrack", "prevtrack", "volumemute", "volumeup", "volumedown",
+                       "up", "down", "left", "right", "pageup", "pagedown", "home", "end", "esc"],
+    "comandos": ["ipconfig", "ping", "tasklist", "systeminfo", "whoami", "hostname",
+                 "nslookup", "tracert", "netstat", "where"]
+  },
+
+  "criticas": {
+    "permitir_shell_arbitrario": false
+  }
+}
