@@ -1,0 +1,174 @@
+ULTRON Desktop 1.9.4 — atualização pelo GitHub e zoom travado
+
+ATUALIZAÇÃO
+- Ajustes (Ctrl+,) tem a barra "verificar atualização". Ela consulta o último
+  Release de viniciusnpaula-bit/Projeto-U.L.T.R.O.N., compara versões e mostra as
+  novidades.
+- Fluxo: baixa o ZIP do Release -> confere o SHA-256 publicado no SHA256SUMS.txt
+  -> extrai só código e assets (nunca dados do usuário) -> backup em
+  %LOCALAPPDATA%\ULTRON\updates -> script .bat independente espera o ULTRON e o
+  electron fecharem, troca os arquivos com robocopy /XD venv node_modules dados
+  logs e reabre o app. Se a cópia falhar, restaura o backup automaticamente.
+- Botão "desfazer" volta para o backup da última atualização.
+- Sem SHA256SUMS.txt no Release a atualização é RECUSADA. Host fora do GitHub é
+  recusado. HTTP sem TLS é recusado.
+- Rotas locais novas: GET /api/v1/update, /api/v1/update/check; POST
+  /api/v1/update/{apply,launch,rollback}.
+- Para o botão encontrar pacote, cada Release precisa de:
+    1) o ZIP ULTRON-Desktop-vX.Y.Z.zip como asset;
+    2) SHA256SUMS.txt com o hash do ZIP.
+  tools/build_setup.py --zip já gera os dois na pasta de saída.
+
+ZOOM
+- O zoom do Chromium foi desligado: Ctrl+roda, Ctrl +/-, Ctrl+0 e o gesto de
+  pinça não ampliam mais. O fator volta a 100% ao abrir a janela (o Electron
+  guardava o último por origem, por isso a interface reabria ampliada).
+- window.ultron.setZoom(true) reativa, caso algum dia se queira acessibilidade.
+
+ULTRON Desktop 1.9.4 — bat-papo de voz no painel
+
+A coluna direita agora tem dois andares: em cima a CONVERSA DE VOZ (bat-papo), embaixo
+a fita de eventos.
+
+COMO FUNCIONA
+- O núcleo publica cada fala reconhecida e cada resposta como evento
+  conversation_turn (papel, texto, origem, horário). main.py ganhou o gancho
+  `conversa` em modo_voz; desktop_runtime._registrar_conversa guarda os últimos 80
+  turnos e GET /api/v1/conversation devolve o histórico da sessão.
+- O painel pinta em bolhas: "você · voz" à direita com o aro do núcleo, "ultron" à
+  esquerda. Fala escrita no campo aparece como "você · escrito", assim dá para
+  distinguir o que foi falado do que foi digitado.
+- A lista começa vazia com instrução ("Diga 'Ei, Ultron' — cada fala reconhecida e
+  cada resposta aparecem aqui"), rola sozinha quando você está no fim e ganha um
+  brilho rápido na fala que acabou de chegar.
+- Selo "ao vivo" no cabeçalho só fica aceso quando o microfone está realmente
+  capturando; pausado vira "pausado", sem captura vira "sem escuta".
+- Botão "última ↓" volta ao fim da conversa; "limpar" (na fita) apaga a sessão toda.
+- Turnos vêm do evento (tempo real) e são reconciliados a cada 20 s por
+  /conversation, com chave papel+horário+trecho para não duplicar.
+- Privacidade: o runtime passa cada texto por seguranca.redigir antes de guardar —
+  PIN, chaves e tokens nunca entram no bat-papo. Há teste para isso.
+
+ULTRON Desktop 1.9.4 — interface 2.0 (câmara do núcleo)
+
+A interface antiga foi descartada por completo: sidebar de 7 páginas, cartões de
+métrica, feed de atividade, barra de comando solta e duas áreas de escrita.
+
+AGORA É UMA TELA SÓ
+- Fundo: campo de partículas lento que acompanha a cor do tema.
+- Núcleo: um "sol de vento" desenhado em canvas — halo atmosférico, cinco
+  filamentos de plasma deformados por senóides, um horizonte nítido e uma pupila
+  que respira. Substitui os anéis girando da versão anterior.
+- A energia do núcleo é o estado REAL do núcleo: em silêncio ele respira devagar,
+  enquanto você fala ele acelera, pensando/responsdendo ele pulsa forte, sem núcleo
+  ele apaga. O rótulo (À ESCUTA / OUVINDO VOCÊ / PENSANDO / RESPONDENDO / EM
+  SILÊNCIO) e a dica abaixo vêm do mesmo status da API.
+- Resposta: uma frase grande no centro, que encolhe sozinha quando é longa
+  (classe .long), com um ponto luminoso piscando ao lado.
+- Verbos: as ações rápidas viraram pílulas discretas abaixo da resposta.
+- Uma linha de comando só: prompt "›", campo, botão de microfone com estado e
+  botão de enviar. O nível do microfone é uma linha fina embaixo dela.
+- À direita, uma fita de eventos (hora + você/ultron/aviso). Substitui os quatro
+  cartões, o feed e a lista de histórico antigos.
+- Ajustes: uma gaveta única (Ctrl+,) com tema, microfone e canal local. As sete
+  páginas viraram isso.
+- Janela flutuante redesenhada no mesmo idioma: orbe em miniatura, resposta e
+  seis verbos.
+
+DETALHES QUE VALEM
+- Temas (ULTRON/JARVIS/VISÃO/EDITH) agora trocam a cor viva do núcleo, do brilho,
+  das bordas e do ponto de respiração — não só um acento na sidebar.
+- Atalhos: Ctrl+, ajustes; Ctrl+K foca a linha de comando; Esc limpa/fecha.
+- Acessibilidade: rótulos aria em todos os controles, aria-live no estado e na
+  resposta, prefers-reduced-motion desliga toda animação.
+- Janela estreita: a fita desce para baixo; altura pequena: núcleo menor e menos
+  verbos. Sem scroll horizontal.
+- Nenhum estado inventado: tudo desenhado vem de /status e /events. Métricas só
+  as reais (cpu, ram, disco, contagem da sessão).
+
+ARQUIVOS
+- electron/site/index.html, style.css e app.js reescritos.
+- electron/site/src/orb.js: novo núcleo (criarOrbe) e campo de partículas
+  (criarCampo); estadoDoOrbe agora devolve também a dica em português.
+- electron/site/mini-hud.{html,css,js} reescritos.
+- electron/site/preview-mock.js: mock do núcleo só para pré-visualizar a tela no
+  navegador; o Electron injeta a ponte real (preload.js).
+- Testes da UI atualizados para a nova estrutura (a suíte continua em 55 testes).
+
+ULTRON Desktop 1.9.4 — instalador único e ícone corrigido
+
+INSTALADOR
+- setup.bat, "ULTRON Desktop.exe" (launcher.cs) e iniciar_desktop.bat duplicado foram
+  substituídos por um único ULTRON-Setup.exe compilado de installer/ultron_setup.py.
+  Um .bat que dispara python/pip/npm e um PE sem assinatura que abre outro processo
+  eram o que mais chamava atenção de antivírus. Agora há um programa só, com ícone,
+  versão, descrição e assinatura de checksum (SHA256SUMS.txt).
+- Instalação verificada antes de mexer em qualquer coisa: arquivos, caminho simples,
+  permissão de escrita, espaço em disco e versão de Python (>=3.10, 64 bits) e Node (>=18).
+- Passos idempotentes com marcadores (venv/.ultron-venv.json, venv/.ultron-deps.json,
+  electron/node_modules/.ultron-electron.json): rodar de novo repara e não reinstala tudo.
+- .env nunca é sobrescrito. Atalho no Menu Iniciar e na Área de Trabalho aponta para
+  ULTRON.exe. Desinstalação remove só o atalho que aponta para esta pasta.
+- Log de instalação em logs/setup.log, com segredos mascarados.
+
+ÍCONE
+- ULTRON.ico antigo: PNGs reais, mas a arte do brasão vinha sobre um quadrado escuro
+  sólido, sem transparência, e alguns scanners estranham payload de ícone assim.
+- Agora tools/make_icon.py recorta a arte, aplica transparência (preservando o aro
+  vermelho) e gera 16/24/32/48/64/128/256 px. --check falha o build se o .ico quebrar.
+
+LAUNCHER
+- launcher.py compila para ULTRON.exe (windowed). Um único ponto de entrada:
+  abre o painel, ou --texto / --bandeja / --diagnostico. Resolve o problema de raiz
+  quando o .exe é executado a partir de uma pasta diferente da instalação.
+
+CORREÇÕES
+- main.py --testar voltou a funcionar (chamava pytest e abria o núcleo antes).
+- Duas entradas de início automático (Ultron.vbs e ULTRON Desktop.vbs) podiam iniciar
+  dois processos; a remoção agora limpa as duas.
+- API local com porta preferida 3900: o launcher consegue saber quando o painel está
+  pronto. Continua só em loopback, com fallback para porta livre.
+- Testes de microfone não dependem mais da preferência salva na máquina de quem roda
+  (falhavam em qualquer PC com microfone configurado). voz.py e microphone_devices.py
+  toleram configuração/rede do PortAudio parcial.
+
+ULTRON Desktop v1.6.1 — diagnóstico local e rastreamento seguro
+
+- Diagnóstico limitado a verificações locais e passivas: não chama provedores, não executa ferramentas, não grava nem reproduz áudio e não captura tela.
+- Rastreamento registra apenas rótulos internos permitidos para intenção, ferramenta, etapa e estado; textos livres não são gravados.
+- A versão do aplicativo, da API e da interface foi atualizada para 1.6.1.
+- Nova aba "Orbe" no menu: círculo com várias linhas ondulando. Quando VOCÊ fala, as linhas giram mais rápido e a cor fica mais forte e viva.
+- Estados: ESCUTANDO (calmo), OUVINDO VOCÊ (rápido e vivo), PROCESSANDO, FALANDO (o ULTRON respondendo), PAUSADO/ERRO/OFFLINE (apagado).
+- A cor segue o tema escolhido (canto superior): "ultron" = vermelho, "jarvis" = ciano (parecido com a referência).
+- A aba tem campo de texto e botão de pausar/retomar escuta. A interface anterior continua igual.
+- O orbe só consulta o núcleo (5x por segundo) enquanto a aba está aberta.
+- Núcleo: novo campo "speaking" no status (ligado enquanto o ULTRON fala).
+
+ULTRON Desktop v1.5.2 — resposta por voz mais rápida
+- A fala é dividida em frases: a 1ª toca enquanto a próxima ainda está sendo gerada (antes esperava a resposta inteira).
+- O Groq gpt-oss passa a usar raciocínio "low" (REASONING_EFFORT no .env; vazio desliga). Se a API recusar, volta ao normal sozinho.
+- Silêncio que encerra sua fala: 0,7 s (antes 1,0 s). Ajustável em SILENCIO_FIM no .env.
+- Medição: logs/ultron.log registra "[tempo] reconhecimento de voz", "[tempo] IA" e "[tempo] 1º áudio" a cada comando.
+- Novo: testes_latencia.py.
+
+ULTRON Desktop v1.5.1 — correções de segurança e estabilidade
+- abrir_site: endereço com ?, # ou muito longo agora pede confirmação (evita vazar dados por URL).
+- lembrar_fato e ver_tela agora pedem confirmação (ver_tela envia o print da tela para a IA na nuvem).
+- esquecer_fato com trecho vazio não apaga mais todos os fatos.
+- Confirmação por voz só aceita: sim, confirmo, confirmado, autorizo, autorizado, positivo. "ok", "isso", "pode" etc. foram removidos.
+- IA online: timeout de 15 s e 1 nova tentativa por provedor (antes 40 s e 2), para não travar a voz quando um provedor cai.
+- Para não ser perguntado de novo, adicione "tela.ver", "memoria.lembrar" ou "site.abrir_com_dados" em allowlist.operacoes no permissoes.json.
+
+ULTRON Desktop v1.5.0 — seleção de microfone
+
+A versão 1.4.0 adiciona um painel flutuante arrastável que fica sobre outras janelas, com mini núcleo decorativo, status reais e ações rápidas encaminhadas ao mesmo fluxo de comandos da interface principal. A versão 1.4.1 aplica a logo oficial aos ícones, atalhos e interface.
+
+A interface continua em Electron com HTML, CSS e JavaScript. A esfera central e os cartões de recursos sem estado verificável foram removidos. Conversa, microfone, ações rápidas, métricas e eventos continuam ligados ao núcleo e à API local.
+
+O Desktop inicia um único DesktopRuntime, a API autenticada em 127.0.0.1 e a interface Electron. A escuta do microfone permanece sob controle do núcleo e o botão do painel pausa ou retoma esse mesmo fluxo. A interface não abre subprocessos de voz nem simula conexão ou métricas.
+
+O token local é aleatório e temporário por execução. Ele é passado ao processo Electron pelo ambiente do processo e não é gravado em configurações. Ações e confirmações continuam sendo validadas pelo núcleo.
+
+setup.bat instala dependências Python e Electron. O ZIP de distribuição é uma cópia de fonte verificada; ainda precisa de instalação em Windows com Python e Node.js para gerar o instalador executável.
+
+Não distribua .env, credenciais, bancos locais, logs, caches, node_modules ou ambiente virtual.

@@ -1,0 +1,15 @@
+# Nunca comitar chaves, ambiente ou dados do usuário
+.env
+venv/
+node_modules/
+dados/
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+electron/dist*/
+*.zip
+*.spec
+*.log
+.ultron-state.json
